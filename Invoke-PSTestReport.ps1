@@ -8,6 +8,7 @@ Param(
   [string]  $ScriptAnalyzerFile = ".\artifacts\ScriptAnalyzerResults.json",
   [string]  $PesterFile = ".\artifacts\PesterResults.json",
   [string]  $OutputDir = ".\artifacts",
+  [string]  $IgnorePath = $PSScriptRoot,
   [switch]  $FailOnSkippedOrPending
 )
 
@@ -143,7 +144,7 @@ foreach($file in $Pester.CodeCoverage.AnalyzedFiles)
 Add-Type -AssemblyName System.Web
 foreach($missed in $Pester.CodeCoverage.MissedCommands)
 {
-    $FilePath = ($missed.File).Replace($PSScriptRoot,'')
+    $FilePath = ($missed.File).Replace("$PSScriptRoot",'')
     $command = [System.Web.HttpUtility]::HtmlEncode($missed.Command)
 
     $CoverageTable += "
@@ -164,7 +165,7 @@ foreach($hit in $Pester.CodeCoverage.HitCommands)
 {
     if($ShowHitCommands)
     {
-        $FilePath = ($hit.File).Replace($PSScriptRoot,'')
+        $FilePath = ($hit.File).Replace("$PSScriptRoot",'')
         $command = [System.Web.HttpUtility]::HtmlEncode($hit.Command)
 
         $CoverageTable += "
