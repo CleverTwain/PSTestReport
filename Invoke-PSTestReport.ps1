@@ -22,16 +22,16 @@ $Colors = @{
 $templateFile = "$PSScriptRoot\lib\TestReport.htm"
 
 # Load Pester JSON Files: Required
-if (!(Test-Path $PesterFile)) 
-{ 
+if (!(Test-Path $PesterFile))
+{
     throw "$PesterFile is missing."
 }
 $Pester = Get-Content $PesterFile | ConvertFrom-Json
 
 # Load ScriptAnalyzer JSON Files: Optional
 $ScriptAnalyzer = $null;
-if ((Test-Path $ScriptAnalyzerFile)) 
-{ 
+if ((Test-Path $ScriptAnalyzerFile))
+{
     $ScriptAnalyzer = Get-Content $ScriptAnalyzerFile | ConvertFrom-Json
 }
 
@@ -39,7 +39,7 @@ if ((Test-Path $ScriptAnalyzerFile))
 Copy-Item -Recurse -Path "$PSScriptRoot\lib" -Destination (Join-Path $OutputDir "lib") -Force
 
 # From Pester Source
-function Get-HumanTime($Seconds) 
+function Get-HumanTime($Seconds)
 {
     if($Seconds -gt 0.99) {
         $time = [math]::Round($Seconds, 2)
@@ -56,14 +56,14 @@ function Get-HumanTime($Seconds)
 function Get-GitCommitHash($Length)
 {
     $sha = $null
-    
+
     try {
         $sha = (. git rev-parse HEAD).Substring(0, $length)
     }
     catch [System.Exception] {
         Write-Verbose "Git Hash could not be retrieved."
     }
-    
+
     return $sha
 }
 
@@ -131,7 +131,7 @@ foreach ($issue in $ScriptAnalyzer)
 #Keep track of single file coverage so we only iterate once
 $FileCoverage = @{}
 
-foreach($file in $Pester.CodeCoverage.AnalyzedFiles) 
+foreach($file in $Pester.CodeCoverage.AnalyzedFiles)
 {
     $FileCoverage[$file] = @{
         Hit = 0
@@ -143,32 +143,34 @@ foreach($file in $Pester.CodeCoverage.AnalyzedFiles)
 Add-Type -AssemblyName System.Web
 foreach($missed in $Pester.CodeCoverage.MissedCommands)
 {
+    $FilePath = ($missed.File).Replace($PSScriptRoot,'')
     $command = [System.Web.HttpUtility]::HtmlEncode($missed.Command)
 
     $CoverageTable += "
         <tr>
             <td><span class='label label-warning'>Missed</span></td>
-            <td>$($missed.File)</td>
+            <td>$($FilePath)</td>
             <td>$($missed.Line)</td>
             <td>$($missed.Function)</td>
             <td><pre style='border:1px solid $($Colors.YELLOW); background-color: transparent;'>$($command)</pre></td>
         </tr>
     "
 
-    $FileCoverage[$missed.File].Missed++
+    $FileCoverage[$FilePath].Missed++
 }
 
-# Create Script for Coverage Table (hit) 
+# Create Script for Coverage Table (hit)
 foreach($hit in $Pester.CodeCoverage.HitCommands)
 {
     if($ShowHitCommands)
     {
+        $FilePath = ($hit.File).Replace($PSScriptRoot,'')
         $command = [System.Web.HttpUtility]::HtmlEncode($hit.Command)
 
         $CoverageTable += "
             <tr>
                 <td><span class='label label-success'>Hit</span></td>
-                <td>$($hit.File)</td>
+                <td>$($FilePath)</td>
                 <td>$($hit.Line)</td>
                 <td>$($hit.Function)</td>
                 <td><pre style='border:1px solid $($Colors.GREEN); background-color: transparent;'>$command</pre></td>
@@ -176,7 +178,7 @@ foreach($hit in $Pester.CodeCoverage.HitCommands)
         "
     }
 
-   $FileCoverage[$hit.File].Hit++
+   $FileCoverage[$FilePath].Hit++
 }
 
 # Create File Tested Table
@@ -185,7 +187,7 @@ foreach($file in $FileCoverage.GetEnumerator())
 {
     $total = ($file.Value.Hit + $file.Value.Missed)
     $coverage = [Math]::Round(($file.Value.Hit / $total) * 100, 2)
-    
+
     if($coverage -lt 10)
     {
        $color = "progress-bar-danger"
@@ -218,7 +220,7 @@ $OverallCoverage = ($Pester.CodeCoverage.NumberOfCommandsExecuted/$Pester.CodeCo
 if($Pester.FailedCount -eq 0)
 {
     # If the switch $FailOnSkippedOrPending is set, any skipped or pending tests will fail the build.
-    if ($FailOnSkippedOrPending -and ($Pester.PendingCount -ne 0) -and ($Pester.SkippedCount -ne 0) ) 
+    if ($FailOnSkippedOrPending -and ($Pester.PendingCount -ne 0) -and ($Pester.SkippedCount -ne 0) )
     {
         $PesterPassed = $false
     }
@@ -243,7 +245,7 @@ $Replace = @{
     BUILD_DATE = Get-Date -Format u
     COMMIT_HASH = Get-GitCommitHash -Length 10
 
-    # Generated 
+    # Generated
     BUILD_RESULT = if($OverallCoverage -ge $Compliance -and $PesterPassed) {"PASSED"} else {"FAILED"}
     BUILD_RESULT_COLOR = if($OverallCoverage -ge $Compliance -and$PesterPassed) {"panel-success"} else {"panel-danger"}
     BUILD_RESULT_ICON = if($OverallCoverage -ge $Compliance -and $PesterPassed) {"fa-check"} else {"fa-times"}
@@ -255,7 +257,7 @@ $Replace = @{
     TEST_OVERALL = [Math]::Round(($Pester.PassedCount/$Pester.TotalCount) * 100, 0)
     TEST_OVERALL_COLOR = if($Pester.FailedCount -eq 0) {$Colors.GREEN} else {$Colors.RED}
     COVERAGE_OVERALL = [Math]::Round($OverallCoverage * 100, 0)
-    COVERAGE_OVERALL_COLOR = if($OverallCoverage -lt 0.1) {$Colors.RED} elseif($OverallCoverage -lt 0.5) {$Colors.YELLOW} else {$Colors.GREEN} 
+    COVERAGE_OVERALL_COLOR = if($OverallCoverage -lt 0.1) {$Colors.RED} elseif($OverallCoverage -lt 0.5) {$Colors.YELLOW} else {$Colors.GREEN}
 
     # Pester
     TOTAL_COUNT = $Pester.TotalCount
@@ -273,11 +275,11 @@ $Replace = @{
     SA_WARNING_COUNT = ($ScriptAnalyzer | where-object {$_.Severity -eq "1"} | Measure-Object).Count
 }
 
-$template = (Get-Content $templateFile) 
+$template = (Get-Content $templateFile)
 foreach ($var in $Replace.GetEnumerator())
 {
     # Write-Host "Replacing: $($var.key)"
-    $template = $template | ForEach-Object { $_.replace( "{$($var.key)}", $var.value ) }  
+    $template = $template | ForEach-Object { $_.replace( "{$($var.key)}", $var.value ) }
 }
 
 $template | Set-Content (Join-Path $OutputDir "TestReport.htm")
