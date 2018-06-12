@@ -157,7 +157,7 @@ foreach($missed in $Pester.CodeCoverage.MissedCommands)
         </tr>
     "
 
-    $FileCoverage[$FilePath].Missed++
+    $FileCoverage[$missed.File].Missed++
 }
 
 # Create Script for Coverage Table (hit)
@@ -179,13 +179,15 @@ foreach($hit in $Pester.CodeCoverage.HitCommands)
         "
     }
 
-   $FileCoverage[$FilePath].Hit++
+   $FileCoverage[$hit.file].Hit++
 }
 
 # Create File Tested Table
 # TODO: Add coverage % calcs for each file?
 foreach($file in $FileCoverage.GetEnumerator())
 {
+    #$FilePath = ($file).Replace("$IgnorePath","")
+    Write-Output $FileName
     $total = ($file.Value.Hit + $file.Value.Missed)
     $coverage = [Math]::Round(($file.Value.Hit / $total) * 100, 2)
 
@@ -205,7 +207,7 @@ foreach($file in $FileCoverage.GetEnumerator())
     $FilesTestedTable += "
         <tr>
         <td>
-            <span>$($file.Name)</span>
+            <span>$($FilePath)</span>
             <div class='progress' style='margin-bottom:0;'>
                 <div class='progress-bar $color' role='progressbar' aria-valuenow='$coverage' aria-valuemin='0' aria-valuemax='100' style='width: $coverage%; min-width: 2em;'>$coverage %</div>
             </div>
